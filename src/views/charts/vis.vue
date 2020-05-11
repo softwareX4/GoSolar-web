@@ -36,7 +36,11 @@
 				</el-col>
 			</el-row>
 		</div>
-    <div id="container"></div>
+		
+		<div id="container">
+		<!-- visulization scenen -->
+		</div>
+	
 		<div class="block" align="right" id="wrap">
 			<el-image :src="require('@/assets/metaphor.png')" fit="cover">
 				<div slot="placeholder" class="image-slot">
@@ -63,7 +67,6 @@
 				
 				
 				    var scene = new THREE.Scene();
-				    var texLoader = new THREE.TextureLoader();
 				
 				    var cloud = cloudFun()
 				    scene.add(cloud)
@@ -76,7 +79,7 @@
 				    scene.add(sun)
 				    var planetGroup = new THREE.Group();
 				    scene.add(planetGroup);
-				    Data.planet.forEach(function(obj) {
+				    Data.planet.forEach((obj) => {
 				        var planet = null;
 				        if (obj.ring) {
 				            planet = createringPlanetMesh(obj.sphere.R, obj.sphere.color, obj.ring.r, obj.ring.color)
@@ -151,13 +154,13 @@
 				                chooseMesh.position.z
 				            );
 				            var standardVector = worldVector.project(camera);
-				            var a = window.innerWidth / 2;
-				            var b = window.innerHeight / 2;
+				            var a = container.clientWidth / 2;
+				            var b = container.clientHeight / 2;
 				            var x = Math.round(standardVector.x * a + a);
 				            var y = Math.round(-standardVector.y * b + b);
 				
 				            img.style.left = x + 'px';
-				            img.style.top = y + 20 + 'px';
+				            img.style.top = y  + 10 + 'px';
 				        }
 				    }
 				    render();
@@ -171,11 +174,11 @@
 				    function choose(event) {
 				        img.src = '';
 				        chooseMesh = null;
-				        var Sx = event.clientX;
-				        var Sy = event.clientY;
+				        var Sx = event.layerX;
+				        var Sy = event.layerY;
 				
-				        var x = (Sx / window.innerWidth) * 2 - 1;
-				        var y = -(Sy / window.innerHeight) * 2 + 1;
+				        var x = (Sx / width) * 2 - 1;
+				        var y = -(Sy / height) * 2 + 1;
 				
 				        var raycaster = new THREE.Raycaster();
 				        raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
@@ -190,8 +193,8 @@
 				    addEventListener('click', choose,false);
 				
 				    window.onresize = function() {
-				        renderer.setSize(window.innerWidth, window.innerHeight);
-				        k = (window.innerWidth) / (window.innerHeight);
+				        renderer.setSize(container.clientWidth, container.clientHeight);
+				        k = (container.clientWidth) / (container.clientHeight);
 				        camera.left = -s * k;
 				        camera.right = s * k;
 				        camera.top = s;

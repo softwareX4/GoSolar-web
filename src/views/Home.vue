@@ -12,7 +12,7 @@
 				</div>
 			</el-col>
 			<el-col :span="15">
-				GoSolar is an implementation of the Code Solar System metaphor for visualizing Go source code. Visit our repository for <a href="https://github.com/rodrigo-brito/gocity">more details.</a>
+				GoSolar is an implementation of the Code Solar System metaphor for visualizing Go source code. Visit our repository for <a href="https://github.com/softwareX4/GoSolar-web">more details.</a>
 				
 			</el-col>
 		</el-col>
