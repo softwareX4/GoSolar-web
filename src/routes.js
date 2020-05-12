@@ -2,7 +2,7 @@ import Login from './views/Login.vue'
 import NotFound from './views/404.vue'
 import Home from './views/Home.vue'
 import echarts from './views/charts/echarts.vue'
-import vis from './views/charts/vis-refactor.vue'
+import vis from './views/charts/go-solar.vue'
 
 let routes = [
     {
