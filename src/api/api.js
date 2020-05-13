@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-axios.defaults.timeout = 15000;  //超时响应
+axios.defaults.timeout = 350000;  //超时响应
 axios.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded'; // 配置请求头（推荐）
     //res.header('Access-Control-Allow-Headers', 'Content-Type, Content-Length, Authorization, Accept, X-Requested-With , yourHeaderFeild');
 axios.defaults.headers.post['Content-Type'] = 'application/json;charset=utf-8'; // 配置请求头
