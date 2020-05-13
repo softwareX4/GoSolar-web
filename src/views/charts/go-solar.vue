@@ -117,19 +117,51 @@
 						this.root = res.data.data;
 						console.log(this.root);
 						console.log(this.root.nodeEntity.name);
-						
-					/* 	var rootGroup = new THREE.Group();
-						this.scene.add(rootGroup);
-						this.traverse(this.root,rootGroup);
-						this.adjustCameraPos(rootGroup); */
+
 						var pivotPoint = new THREE.Object3D();
 						this.scene.add(pivotPoint);
-						this.traverse(this.root,pivotPoint);
+						//this.traverse(this.root.childNodes,pivotPoint);
+						this.showPlanet(this.root);
 						this.adjustCameraPos(pivotPoint);
+						// this.scene.freezeActiveMeshes();
+						this.scene.autoClear = false; // Color buffer
+						this.scene.autoClearDepthAndStencil = false; // Depth and stencil, obviously
+						this.scene.blockfreeActiveMeshesAndRenderingGroups = true;
+						this.scene.blockfreeActiveMeshesAndRenderingGroups = false;
+
 					}
 				});
 			},
-			
+			showPlanet : function(root){
+				var pivotPoint = new THREE.Object3D();
+				this.scene.add(pivotPoint);
+				console.log((pivotPoint));
+				//this.traverse(this.root,pivotPoint);
+				var _self = this;
+				var traverse = this.tco(function(children,parent) {
+					console.log("children:",children);
+					if(!children)
+						return;
+					children.forEach(child => {
+						let mesh = _self.createchild(child,10);
+						if(parent){
+							if(mesh.line){
+								parent.add(mesh.planet);
+								parent.add(mesh.line);
+							}
+							else  parent.add(mesh);
+						}
+						if (child.childNodes && child.childNodes.length > 0) {
+							if(mesh.planet) mesh = mesh.planet;
+							return traverse(child.childNodes, mesh);
+						}
+					});
+				});
+
+				traverse(this.root.childNodes,pivotPoint);//实际上现在traverse函数就是accumulator函数
+
+				this.adjustCameraPos(pivotPoint);
+			},
 			init:function(){
 				this.initScene();
 				this.initPlanet();
@@ -181,10 +213,7 @@
 			
 			initPlanet:function(){											
 				this.cloud = this.cloudFun();
-				this.scene.add(this.cloud);	/* 
-				var rootGrouop = new THREE.Group();
-				this.scene.add(rootGrouop);
-				this.traverse(this.root,rootGrouop); */
+				this.scene.add(this.cloud);
 				this.adjustCameraPos(this.cloud);
 								
 			},
@@ -289,10 +318,11 @@
 			
 			//行星属性映射
 			getColor:function(node){
-				var loc = 0;
+				console.log(node);
+				let  loc = 0;
 				if(node.type !== Util.TYPE.P) 
 					loc = node.feature.loc;
-				var color = Util.getProportionalColor(
+				let  color = Util.getProportionalColor(
 				  Util.colors[node.type-1].start,
 				  Util.colors[node.type-1].end,
 				  Math.min(100, loc / 2000.0)
@@ -304,17 +334,17 @@
 			
 			//画轨道
 			 circle(cx,cy,r) {
-			    var arc = new THREE.ArcCurve(cx,cy, r, 0, 2 * Math.PI, true); // 圆心  半径  起始角度
+			    let arc = new THREE.ArcCurve(cx,cy, r, 0, 2 * Math.PI, true); // 圆心  半径  起始角度
 			    // 参数50表示曲线分割成几部分
 			    //返回一个vector2对象作为元素组成的数组,如果是3D样条曲面返回的元素是三维向量vector3
-			    var points = arc.getPoints(50);
-			    var geometry = new THREE.Geometry();
+				 let  points = arc.getPoints(50);
+				 let  geometry = new THREE.Geometry();
 			    //setFromPoints方法的本质：遍历points把vector2转变化vector3
 			    geometry.setFromPoints(points);
-			    var material = new THREE.LineBasicMaterial({
+				 let  material = new THREE.LineBasicMaterial({
 			        color: 0xDCDCDC
 			    });
-			    var line = new THREE.LineLoop(geometry, material);
+				 let  line = new THREE.LineLoop(geometry, material);
 			    line.rotateX(Math.PI / 2);//可以旋转圆弧线
 			    return line;
 			},
@@ -323,98 +353,83 @@
 			//color是RGB格式
 			createMesh(geometry, color) {
 				 
-			    var material = new THREE.MeshBasicMaterial({
+			    let material = new THREE.MeshBasicMaterial({
 			        color:new THREE.Color( color.r / 255, color.g / 255, color.b / 255 ),
 			    });				
-			    var mesh = new THREE.Mesh(geometry, material);
+			    let mesh = new THREE.Mesh(geometry, material);
 			    return mesh;
 			},
 			
 			//创建球体
 			 createSphereMesh(R, color) {
-			    var geometry = new THREE.SphereGeometry(R, 100, 100);  //球体
-			    return  this.createMesh(geometry, color);
+			    let geometry = new THREE.SphereGeometry(R, 20, 20);  //球体
+
+				 let material = new THREE.MeshBasicMaterial({
+					 color:new THREE.Color( color.r / 255, color.g / 255, color.b / 255 ),
+				 });
+				 return new THREE.Mesh(geometry, material);
 			},
-			
-			/* 
-			//为节点创建行星，若有子节点，加轨道
-			//以父节点为中心，返回一个子群
-			createchild(parentGroup,node,revolutionR){				
-				var color = this.getColor(node.nodeEntity);		
-				var methods = node.nodeEntity.type == Util.TYPE.P ? 5 : node.nodeEntity.feature.methods;
-				var planet = this.createSphereMesh(methods,color);
-				//创建子群
-				var planetGroup = new THREE.Group();
-				planetGroup.add(planet);
-				
-				planet.name = node.nodeEntity.name;
-				//环绕半径
-				planet.revolutionR = revolutionR;
-				planet.angle = 2 * Math.PI * Math.random();
-				
-				
-				parentGroup.add(planetGroup);	
-							
-				planet.position.set(planet.revolutionR * Math.sin(planet.angle), 0, planet.revolutionR * Math.cos(planet.angle));
-				console.log(planet.position);
-				//if(node.childNodes !== null){					
-					var line =  this.circle(planet.position.x,planet.position.z,planet.revolutionR);
-					planetGroup.add(line);
-				//}
-				return planetGroup;
-			},
-			
-			//遍历
-			traverse(root,rootGroup){
-				var group = this.createchild(rootGroup,root,50);
-				rootGroup.add(group);
-				if(root.childNodes == null){
-					return;
-				}
-				else{
-					root.childNodes.forEach((child) => {
-					    this.traverse(child,group);
-					});
-				}
-			}, */
-				
-			//为节点创建行星，若有子节点，加轨道
-			//以父节点为中心，返回一个子群
-			createchild(parent,node,revolutionR){				
-				var color = this.getColor(node.nodeEntity);		
-				var methods = node.nodeEntity.type == Util.TYPE.P ? 2 : node.nodeEntity.feature.methods;
+
+			createchild(node,revolutionR){
+				let color = this.getColor(node.nodeEntity);
+				let methods = node.nodeEntity.type == Util.TYPE.P ? 2 : node.nodeEntity.feature.methods;
 				methods = methods == 0 ? 0.5 : methods;
-				var planet = this.createSphereMesh(methods,color);
-				
-				
+				let planet = this.createSphereMesh(methods,color);
 				planet.name = node.nodeEntity.name;
 				//环绕半径
 				planet.revolutionR = revolutionR;
 				planet.angle = 2 * Math.PI * Math.random();
-				
-				parent.add(planet);	
-							
+
 				planet.position.set(planet.revolutionR * Math.sin(planet.angle), 0, planet.revolutionR * Math.cos(planet.angle));
-				console.log(planet.position);
-				if(node.childNodes !== null){					
-					var line =  this.circle(planet.position.x,planet.position.z,planet.revolutionR);
-					parent.add(line);
+
+				if(node.childNodes !== null){
+					let line =  this.circle(planet.position.x,planet.position.z,planet.revolutionR);
+					return {planet,line};
 				}
+				else
 				return planet;
 			},
-			//遍历
-			traverse(root,rootPlanet){
-				var childPlanet = this.createchild(rootPlanet,root,10);
-				rootPlanet.add(childPlanet);
-				if(root.childNodes == null){
+			traverse(children,parent){
+				if(!children)
 					return;
-				}
-				else{
-					root.childNodes.forEach((child) => {
-					    this.traverse(child,childPlanet);
-					});
-				}
+				children.forEach(child => {
+					let mesh = this.createchild(child,10);
+					if(parent){
+						if(mesh.line){
+							parent.add(mesh.planet);
+							parent.add(mesh.line);
+						}
+						else  parent.add(mesh);
+					}
+					if (child.childNodes && child.childNodes.length > 0) {
+						if(mesh.planet) mesh = mesh.planet;
+						this.traverse(child.childNodes, mesh);
+					}
+				})
 			},
+
+
+
+	tco(f) {
+        		var value;
+        		var active = false;
+        		var accumulated = [];
+
+        		return function accumulator() {
+            		accumulated.push(arguments);//每次将参数传入.
+            		if (!active) {
+						active = true;
+                		while (accumulated.length) {//出循环条件, 当最后一次返回一个数字而不是一个函数时, accmulated已经被shift(), 所以出循环
+                    		value = f.apply(this, accumulated.shift());//调用累加函数, 传入每次更改后的参数, 并执行
+                	}
+                	active = false;
+                	return value;
+            		}
+        		};
+    		},
+
+
+
 				
 			 
 
