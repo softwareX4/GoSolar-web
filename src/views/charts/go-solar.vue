@@ -1,5 +1,6 @@
 <template>
 	<section>
+
 		<div>
 			<el-row>
 				<el-col :span="24">
@@ -11,6 +12,16 @@
 				</el-col>
 			</el-row>
 			<el-row>
+
+				<el-col  :span="2">
+					<div class="grid-content">
+						<el-button
+								plain
+								@click="open1">
+							操作提示
+						</el-button>
+					</div>
+				</el-col>
 				<el-col :span="2">
 					<div class="grid-content"> Examples:</div>
 				</el-col>
@@ -87,6 +98,21 @@
 			}
 		},
 		methods: {
+
+			open1() {
+				const h = this.$createElement;
+
+				this.$notify({
+					title: '提示',
+					dangerouslyUseHTMLString: true,
+					message: '旋转：按住鼠标左键并移动' +
+							'<br>平移：按住鼠标右键并移动' +
+							'<br>缩放：转动鼠标滑轮或按住中键并移动',
+					duration:6000,
+					offset: 200,
+					position: 'top-left'
+				});
+			},
 			//请求后台数据
 			onSubmit() {
 
@@ -115,14 +141,14 @@
 							type: 'success'
 						});
 						this.root = res.data.data;
-						console.log(this.root);
-						console.log(this.root.nodeEntity.name);
+						//console.log(this.root);
+						//console.log(this.root.nodeEntity.name);
+						//this.traverse(this.root.childNodes,pivotPoint);
 
 						var pivotPoint = new THREE.Object3D();
 						this.scene.add(pivotPoint);
-						//this.traverse(this.root.childNodes,pivotPoint);
 						this.showPlanet(this.root);
-						this.adjustCameraPos(pivotPoint);
+						//this.adjustCameraPos(pivotPoint);
 						// this.scene.freezeActiveMeshes();
 						this.scene.autoClear = false; // Color buffer
 						this.scene.autoClearDepthAndStencil = false; // Depth and stencil, obviously
@@ -142,9 +168,13 @@
 					var mesh = _self.createchild(root,R,index);
 					if(mesh.line){
 						parentMesh.add(mesh.planet);
+						//this.intersectsArr.push(mesh.planet);
 						parentMesh.add(mesh.line);
 					}
-					else  parentMesh.add(mesh);
+					else  {
+						parentMesh.add(mesh);
+						//this.intersectsArr.push(mesh);
+					}
 					if (root.childNodes && root.childNodes.length > 0) {
 						if(mesh.planet) mesh = mesh.planet;
 						var i = -1;
@@ -158,9 +188,10 @@
 
 				traverse(this.root,pivotPoint,this.root.nodeEntity.radius,0);//实际上现在traverse函数就是accumulator函数
 
-				this.adjustCameraPos(pivotPoint);
+				//this.adjustCameraPos(pivotPoint);
 			},
 			init:function(){
+				this.open1();
 				this.initScene();
 				this.initPlanet();
 				this.render();
@@ -197,7 +228,7 @@
 				this.scene.add(point);				
 								
 				var ambient = new THREE.AmbientLight(0x444444);
-				this.scene.add(ambient);				
+				this.scene.add(ambient);
 								
 				this.renderer = new THREE.WebGLRenderer({
 				    antialias: true
@@ -205,6 +236,7 @@
 				this.renderer.setSize(this.width, this.height);
 				this.renderer.setClearColor(0xF5F5F5, 1);
 				container.appendChild(this.renderer.domElement);
+				addEventListener("resize", this.onWindowResize, false);
 				
 			},
 			
@@ -212,7 +244,7 @@
 			initPlanet:function(){											
 				this.cloud = this.cloudFun();
 				this.scene.add(this.cloud);
-				this.adjustCameraPos(this.cloud);
+				//this.adjustCameraPos(this.cloud);
 								
 			},
 			
@@ -254,8 +286,8 @@
 			//控制器
 			control:function(){
 				var controls = new THREE.OrbitControls( this.camera, this.renderer.domElement );
-				controls.target = this.lookPos;
-				this.camera.lookAt(this.lookPos);
+				//controls.target = this.lookPos;
+				//this.camera.lookAt(this.lookPos);
 				addEventListener('click', this.choose,false);
 			},
 			choose(event) {
@@ -266,8 +298,7 @@
 							
 			    var x = (Sx / this.width) * 2 - 1;
 			    var y = -(Sy / this.height) * 2 + 1;
-							
-			    var raycaster = new THREE.Raycaster();
+				var raycaster = new THREE.Raycaster();
 			    raycaster.setFromCamera(new THREE.Vector2(x, y), this.camera);
 			    var intersects = raycaster.intersectObjects(this.intersectsArr, false);
 			    if (intersects.length > 0) {
@@ -289,7 +320,17 @@
 				this.camera.position.copy(cameraPos);
 				
 			},
-			
+
+			onWindowResize: function() {
+				this.renderer.setSize(this.width, this.height);
+				var s = 310;
+				var k = (this.width) / (this.height);
+				this.camera.left = -s * k;
+				this.camera.right = s * k;
+				this.camera.top = s;
+				this.camera.bottom = -s;
+				this.camera.updateProjectionMatrix();
+			},
 			//创建星云
 			 cloudFun() {
 			    var geom = new THREE.Geometry();
@@ -345,8 +386,8 @@
 				 let  line = new THREE.LineLoop(geometry, material);
 			    line.rotateX(Math.PI / 2);//可以旋转圆弧线
 
-                 console.log("circle center",cx,cy);
-                 console.log("line position",line.position);
+                 //console.log("circle center",cx,cy);
+                 //console.log("line position",line.position);
 			    return line;
 			},
 			
@@ -392,6 +433,8 @@
 				let methods = this.getR(node);
 				let planet = this.createSphereMesh(methods,color);
 
+				this.intersectsArr.push(planet);
+
 				planet.name = node.nodeEntity.name;
 				//环绕半径
 				planet.revolutionR = revolutionR;
@@ -399,7 +442,7 @@
 				planet.angle = 2 * Math.PI * index;
 
 				planet.position.set( planet.revolutionR * Math.sin(planet.angle), 0, planet.revolutionR * Math.cos(planet.angle));
-				console.log(planet.position);
+				//console.log(planet.position);
 				if(node.childNodes !== null){
 					let line =  this.circle(planet.position.x,planet.position.z,node.nodeEntity.radius);
 					return {planet,line};
@@ -456,17 +499,7 @@
 		
 		mounted() {
 			this.init();
-			
-			window.onresize = function() {
-			    this.renderer.setSize(this.width, this.height);
-				var s = 310;
-			    var k = (this.width) / (this.height);
-			    this.camera.left = -s * k;
-			    this.camera.right = s * k;
-			    this.camera.top = s;
-			    this.camera.bottom = -s;
-			    this.camera.updateProjectionMatrix();
-			}
+
 		}
 	}
 </script>
