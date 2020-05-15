@@ -163,8 +163,9 @@
 				    this.intersectsArr.push(planet);
 					 planet.position.set(planet.revolutionR * Math.sin(planet.angle), 0, planet.revolutionR * Math.cos(planet.angle));
 						console.log(planet.position);
-						var line =  this.circle(planet.position.x,planet.position.z,planet.revolutionR);
-						this.scene.add(line);	
+						var line =  this.circle(planet.position.x,planet.position.z,40);
+						sun.add(line);
+						sun.add(planet);
 					console.log(planet);
 				});
 				
@@ -288,6 +289,8 @@
 			    });
 			    var line = new THREE.LineLoop(geometry, material);
 			    line.rotateX(Math.PI / 2);//可以旋转圆弧线
+				 console.log("circle center",cx,cy);
+				 console.log("line position",line.position);
 			    return line;
 			},
 							

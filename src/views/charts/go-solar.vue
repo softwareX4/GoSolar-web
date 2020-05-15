@@ -135,30 +135,28 @@
 			showPlanet : function(root){
 				var pivotPoint = new THREE.Object3D();
 				this.scene.add(pivotPoint);
-				console.log((pivotPoint));
 				//this.traverse(this.root,pivotPoint);
 				var _self = this;
-				var traverse = this.tco(function(children,parent) {
-					console.log("children:",children);
-					if(!children)
-						return;
-					children.forEach(child => {
-						let mesh = _self.createchild(child,10);
-						if(parent){
-							if(mesh.line){
-								parent.add(mesh.planet);
-								parent.add(mesh.line);
-							}
-							else  parent.add(mesh);
-						}
-						if (child.childNodes && child.childNodes.length > 0) {
-							if(mesh.planet) mesh = mesh.planet;
-							return traverse(child.childNodes, mesh);
-						}
-					});
+				var traverse = this.tco(function(root,parentMesh,R,index) {
+
+					var mesh = _self.createchild(root,R,index);
+					if(mesh.line){
+						parentMesh.add(mesh.planet);
+						parentMesh.add(mesh.line);
+					}
+					else  parentMesh.add(mesh);
+					if (root.childNodes && root.childNodes.length > 0) {
+						if(mesh.planet) mesh = mesh.planet;
+						var i = -1;
+						root.childNodes.forEach(child => {
+							++i;
+							return traverse(child, mesh,root.nodeEntity.radius, i / root.childNodes.length);
+						});
+
+					}
 				});
 
-				traverse(this.root.childNodes,pivotPoint);//实际上现在traverse函数就是accumulator函数
+				traverse(this.root,pivotPoint,this.root.nodeEntity.radius,0);//实际上现在traverse函数就是accumulator函数
 
 				this.adjustCameraPos(pivotPoint);
 			},
@@ -299,8 +297,8 @@
 			        size: 0.01,
 			        vertexColors: true
 			    });
-			    var n = 1200;
-			    for (var i = 0; i < 3000; i++) {
+			    var n = 12000;
+			    for (var i = 0; i < 30000; i++) {
 			        var particle = new THREE.Vector3(
 			            (Math.random() - 0.5) * n,
 			            (Math.random() - 0.5) * n,
@@ -318,7 +316,7 @@
 			
 			//行星属性映射
 			getColor:function(node){
-				console.log(node);
+				//console.log(node);
 				let  loc = 0;
 				if(node.type !== Util.TYPE.P) 
 					loc = node.feature.loc;
@@ -346,6 +344,9 @@
 			    });
 				 let  line = new THREE.LineLoop(geometry, material);
 			    line.rotateX(Math.PI / 2);//可以旋转圆弧线
+
+                 console.log("circle center",cx,cy);
+                 console.log("line position",line.position);
 			    return line;
 			},
 			
@@ -355,7 +356,9 @@
 				 
 			    let material = new THREE.MeshBasicMaterial({
 			        color:new THREE.Color( color.r / 255, color.g / 255, color.b / 255 ),
-			    });				
+			    });
+                material.transparent = true;//是否透明
+                material.opacity = 0.8;//透明度
 			    let mesh = new THREE.Mesh(geometry, material);
 			    return mesh;
 			},
@@ -363,27 +366,42 @@
 			//创建球体
 			 createSphereMesh(R, color) {
 			    let geometry = new THREE.SphereGeometry(R, 20, 20);  //球体
-
-				 let material = new THREE.MeshBasicMaterial({
-					 color:new THREE.Color( color.r / 255, color.g / 255, color.b / 255 ),
-				 });
-				 return new THREE.Mesh(geometry, material);
+				 return this.createMesh(geometry, color);
 			},
 
-			createchild(node,revolutionR){
-				let color = this.getColor(node.nodeEntity);
-				let methods = node.nodeEntity.type == Util.TYPE.P ? 2 : node.nodeEntity.feature.methods;
+			getR(node){
+				let methods = node.nodeEntity.type == Util.TYPE.P ? 4 : node.nodeEntity.feature.methods;
 				methods = methods == 0 ? 0.5 : methods;
+				let R = methods;
+				if(node.nodeEntity.type == Util.TYPE.F ){
+					if(methods < 10) R = 6;
+					else if(methods < 20) R = 7;
+					else if(methods < 30) R = 8;
+					else  R = 12;
+				}
+				else if(node.nodeEntity.type == Util.TYPE.S){
+					if(methods < 2) R = 2;
+					else if(methods < 4) R = 3;
+					else  R = 4;
+				}
+				return R;
+			},
+            //为node节点创建一个环绕半径为revolutionR的行星（若有子节点，加一个轨道）
+			createchild(node,revolutionR,index){
+				let color = this.getColor(node.nodeEntity);
+				let methods = this.getR(node);
 				let planet = this.createSphereMesh(methods,color);
+
 				planet.name = node.nodeEntity.name;
 				//环绕半径
 				planet.revolutionR = revolutionR;
-				planet.angle = 2 * Math.PI * Math.random();
+				//planet.revolutionR = 50 * Math.random() + 10;
+				planet.angle = 2 * Math.PI * index;
 
-				planet.position.set(planet.revolutionR * Math.sin(planet.angle), 0, planet.revolutionR * Math.cos(planet.angle));
-
+				planet.position.set( planet.revolutionR * Math.sin(planet.angle), 0, planet.revolutionR * Math.cos(planet.angle));
+				console.log(planet.position);
 				if(node.childNodes !== null){
-					let line =  this.circle(planet.position.x,planet.position.z,planet.revolutionR);
+					let line =  this.circle(planet.position.x,planet.position.z,node.nodeEntity.radius);
 					return {planet,line};
 				}
 				else
