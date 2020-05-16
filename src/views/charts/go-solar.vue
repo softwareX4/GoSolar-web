@@ -20,6 +20,11 @@
 								@click="open1">
 							操作提示
 						</el-button>
+						<el-button
+								plain
+								@click="reset">
+							dispose
+						</el-button>
 					</div>
 				</el-col>
 				<el-col :span="2">
@@ -48,8 +53,31 @@
 			</el-row>
 		</div>
 
-		<div id="container" v-loading="listLoading">
+
+
+		<div  className="float-card" id="boxPos"  v-show="floatBox.visible">
+			<div className="box is-unselectable">
+				<h4 className="name" v-model="floatBox.info.name">
+					{{floatBox.info.name}}[{{floatBox.info.typeName}}]
+				</h4>
+
+				<div v-show="isNotPackage">
+					<b>Lines: </b>
+					<span v-model="floatBox.info.loc">{{floatBox.info.loc}}</span>
+					<br />
+					<b>Methods: </b>
+					<span v-model="floatBox.info.methods">{{floatBox.info.methods}}</span>
+					<br />
+					<b>Attributes: </b>
+					<span v-model="floatBox.info.attr">{{floatBox.info.attr}}</span>
+					<br />
+				</div>
+			</div>
+		</div>
+
+		<div id="container" v-loading="listLoading" >
 			<!-- visulization scenen -->
+
 		</div>
 
 		<div class="block" align="right" id="wrap">
@@ -59,6 +87,7 @@
 				</div>
 			</el-image>
 		</div>
+
 
 	</section>
 </template>
@@ -81,6 +110,7 @@
 				scene: null,
 				camera: null,
 				renderer: null,
+				controls:null,
 				lookPos:null,
 				width: null,
 				height: null,
@@ -93,11 +123,64 @@
 				FPS: 30,
 				fresh: null,
 				timeS: 0,
+                floatBox:{
+				    position:{
+				        x:0,
+                        y:0
+                    },
+                    info:{
+				    	name:'',
+				        type:'',
+				        loc:'',
+                        methods:'',
+                        attr:'',
+						typeName:'',
+                    },
+                    visible:false
+                },
+				isNotPackage:false,
+				boxPos:'',
+				mouse:{
+					x:0,
+					y:0
+				},
 				
 				
 			}
 		},
 		methods: {
+
+			mousePosition(ev){
+			if(ev.pageX || ev.pageY){
+				return {x:ev.pageX, y:ev.pageY};
+			}
+			return {
+				x:ev.clientX + document.body.scrollLeft - document.body.clientLeft,
+				y:ev.clientY + document.body.scrollTop - document.body.clientTop
+			};
+		},
+			setBoxPosition:function() {
+				this.boxPos.style.left= this.mouse.x + 'px';
+				this.boxPos.style.top= this.mouse.y + 'px';
+
+			},
+			isP(){
+				if(this.floatBox.info.type !== Util.TYPE.P){
+					this.isNotPackage = true;
+				}
+				else {
+					this.isNotPackage = false;
+				}
+			},
+
+			createBox(){
+				this.boxPos = document.createElement("div");
+				document.body.appendChild(this.boxPos);
+				this.boxPos.style.position = 'fixed';
+				this.boxPos.style.backgroundColor= "white";
+				this.boxPos.appendChild(document.getElementById('boxPos'));
+
+			},
 
 			open1() {
 				const h = this.$createElement;
@@ -115,7 +198,6 @@
 			},
 			//请求后台数据
 			onSubmit() {
-
 				let para = {
 					path: this.address,
 				};
@@ -128,6 +210,7 @@
 						data
 					} = res.data;
 					this.listLoading = false;
+
 					//NProgress.done();						
 
 					if (code !== 200) {
@@ -136,10 +219,12 @@
 							type: 'error',
 						});
 					} else {
+
 						this.$message({
 							message: '解析成功',
 							type: 'success'
 						});
+
 						this.root = res.data.data;
 						//console.log(this.root);
 						//console.log(this.root.nodeEntity.name);
@@ -160,7 +245,9 @@
 			},
 			showPlanet : function(root){
 				var pivotPoint = new THREE.Object3D();
+				pivotPoint.name = 'root';
 				this.scene.add(pivotPoint);
+				console.log(this.scene);
 				//this.traverse(this.root,pivotPoint);
 				var _self = this;
 				var traverse = this.tco(function(root,parentMesh,R,index) {
@@ -190,11 +277,95 @@
 
 				//this.adjustCameraPos(pivotPoint);
 			},
+
+			reset:function(){
+				var _self = this;
+				var parent = this.scene.getObjectByName('root');
+				this.scene.remove(parent);
+
+				this.disposeHierarchy(parent,this.disposeNode);
+				/*
+				if (!parent) return;
+				parent.traverse(function (item) {
+					if (item instanceof THREE.Mesh) {
+						item.geometry.dispose(); // 删除几何体
+						item.material.dispose(); // 删除材质
+					}
+
+				});
+				this.scene.remove(parent);*/
+			},
+
+			disposeNode (node)
+			{
+				if (node instanceof THREE.Mesh)
+				{
+					if (node.geometry)
+					{
+						node.geometry.dispose ();
+					}
+
+					if (node.material)
+					{
+						if (node.material instanceof THREE.MeshFaceMaterial)
+						{
+							$.each (node.material.materials, function (idx, mtrl)
+							{
+								if (mtrl.map)               mtrl.map.dispose ();
+								if (mtrl.lightMap)          mtrl.lightMap.dispose ();
+								if (mtrl.bumpMap)           mtrl.bumpMap.dispose ();
+								if (mtrl.normalMap)         mtrl.normalMap.dispose ();
+								if (mtrl.specularMap)       mtrl.specularMap.dispose ();
+								if (mtrl.envMap)            mtrl.envMap.dispose ();
+								if (mtrl.alphaMap)          mtrl.alphaMap.dispose();
+								if (mtrl.aoMap)             mtrl.aoMap.dispose();
+								if (mtrl.displacementMap)   mtrl.displacementMap.dispose();
+								if (mtrl.emissiveMap)       mtrl.emissiveMap.dispose();
+								if (mtrl.gradientMap)       mtrl.gradientMap.dispose();
+								if (mtrl.metalnessMap)      mtrl.metalnessMap.dispose();
+								if (mtrl.roughnessMap)      mtrl.roughnessMap.dispose();
+
+								mtrl.dispose ();    // disposes any programs associated with the material
+							});
+						}
+						else
+						{
+							if (node.material.map)              node.material.map.dispose ();
+							if (node.material.lightMap)         node.material.lightMap.dispose ();
+							if (node.material.bumpMap)          node.material.bumpMap.dispose ();
+							if (node.material.normalMap)        node.material.normalMap.dispose ();
+							if (node.material.specularMap)      node.material.specularMap.dispose ();
+							if (node.material.envMap)           node.material.envMap.dispose ();
+							if (node.material.alphaMap)         node.material.alphaMap.dispose();
+							if (node.material.aoMap)            node.material.aoMap.dispose();
+							if (node.material.displacementMap)  node.material.displacementMap.dispose();
+							if (node.material.emissiveMap)      node.material.emissiveMap.dispose();
+							if (node.material.gradientMap)      node.material.gradientMap.dispose();
+							if (node.material.metalnessMap)     node.material.metalnessMap.dispose();
+							if (node.material.roughnessMap)     node.material.roughnessMap.dispose();
+
+							node.material.dispose ();   // disposes any programs associated with the material
+						}
+					}
+				}
+			} ,  // disposeNode
+
+			disposeHierarchy (node, callback)
+			{
+				for (var i = node.children.length - 1; i >= 0; i--)
+				{
+					var child = node.children[i];
+					this.disposeHierarchy (child, callback);
+					callback (child);
+				}
+			},
+
 			init:function(){
 				this.open1();
 				this.initScene();
 				this.initPlanet();
 				this.render();
+				//this.onSubmit();
 				this.control();
 			},
 			
@@ -205,6 +376,8 @@
 				
 				let container = document.getElementById('container');
 				this.scene = new THREE.Scene();
+
+				this.createBox();
 				
 				this.width = container.clientWidth;
 				this.height = container.clientHeight;
@@ -237,9 +410,9 @@
 				this.renderer.setClearColor(0xF5F5F5, 1);
 				container.appendChild(this.renderer.domElement);
 				addEventListener("resize", this.onWindowResize, false);
+
 				
 			},
-			
 			
 			initPlanet:function(){											
 				this.cloud = this.cloudFun();
@@ -276,19 +449,37 @@
 				    var b = this.height / 2;
 				    var x = Math.round(standardVector.x * a + a);
 				    var y = Math.round(-standardVector.y * b + b);
-							/* 
-				    this.img.style.left = x + 'px';
-				    this.img.style.top = y  + 10 + 'px'; */
+
+				    this.floatBox.position.x = x;
+					this.floatBox.position.y = y;
+					this.getFeature(this.chooseMesh.entity);
+					this.setBoxPosition();
+					this.isP();
 				}
 			},
-			
+			getFeature:function(nodeEntity){
+				this.floatBox.info.name = nodeEntity.name;
+				this.floatBox.info.type = nodeEntity.type;
+				let tmp ;
+				switch (nodeEntity.type) {
+					case Util.TYPE.P : tmp = 'PACAKAGE';break;
+					case Util.TYPE.F : tmp = 'FILE';break;
+					case Util.TYPE.S : tmp = 'STRUCT';break;
+				}
+				this.floatBox.info.typeName = tmp;
+				this.floatBox.info.loc = nodeEntity.type == Util.TYPE.P ? 0 : nodeEntity.feature.loc;
+				this.floatBox.info.methods = nodeEntity.type == Util.TYPE.P ? 0 : nodeEntity.feature.methods;
+				this.floatBox.info.attr = nodeEntity.type == Util.TYPE.P ? 0 : nodeEntity.feature.attr;
+				this.floatBox.visible = true;
+			},
 			
 			//控制器
 			control:function(){
-				var controls = new THREE.OrbitControls( this.camera, this.renderer.domElement );
+				this.controls = new THREE.OrbitControls( this.camera, this.renderer.domElement );
 				//controls.target = this.lookPos;
 				//this.camera.lookAt(this.lookPos);
-				addEventListener('click', this.choose,false);
+				//addEventListener('click', this.choose,false);
+				addEventListener("mousemove", this.choose,false);
 			},
 			choose(event) {
 				
@@ -301,10 +492,13 @@
 				var raycaster = new THREE.Raycaster();
 			    raycaster.setFromCamera(new THREE.Vector2(x, y), this.camera);
 			    var intersects = raycaster.intersectObjects(this.intersectsArr, false);
+
+				var mousePos = this.mousePosition(event);
+				this.mouse.x = mousePos.x;
+				this.mouse.y = mousePos.y;
+
 			    if (intersects.length > 0) {
-							
-			        console.log(intersects[0].object.name);		
-			        this.chooseMesh = intersects[0].object
+			        this.chooseMesh = intersects[0].object;
 			    }
 			},
 			
@@ -436,6 +630,7 @@
 				this.intersectsArr.push(planet);
 
 				planet.name = node.nodeEntity.name;
+				planet.entity = node.nodeEntity;
 				//环绕半径
 				planet.revolutionR = revolutionR;
 				//planet.revolutionR = 50 * Math.random() + 10;
@@ -551,4 +746,17 @@
 		padding: 10px 0;
 		background-color: #f9fafc;
 	}
+	.float-card {
+		position: fixed;
+	}
+
+	@media (max-width: 500px) {
+		.float-card {
+			display: none;
+		}
+	}
+	* html #boxPos {
+		position: absolute;
+	}
+
 </style>
