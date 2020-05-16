@@ -20,11 +20,6 @@
 								@click="open1">
 							操作提示
 						</el-button>
-						<el-button
-								plain
-								@click="reset">
-							dispose
-						</el-button>
 					</div>
 				</el-col>
 				<el-col :span="2">
@@ -107,18 +102,16 @@
 				listLoading: false,
 				address: 'G:\\AAApersonal\\毕设\\project\\kubernetes-master\\pkg\\controller\\apis',
 				root: '',
-				scene: null,
-				camera: null,
-				renderer: null,
-				controls:null,
+				//scene: null,
+				//camera: null,
+				//renderer: null,
+				//controls:null,
 				lookPos:null,
 				width: null,
 				height: null,
-				cloud: null,
-				intersectsArr: [],
-				planetGroup: null,
-				chooseMesh: null,
-				img: '',
+				//cloud: null,
+				//intersectsArr: [],
+				//chooseMesh: null,
 				clock: null,
 				FPS: 30,
 				fresh: null,
@@ -198,6 +191,8 @@
 			},
 			//请求后台数据
 			onSubmit() {
+				//提交新请求前先释放内存
+				this.reset();
 				let para = {
 					path: this.address,
 				};
@@ -219,22 +214,14 @@
 							type: 'error',
 						});
 					} else {
-
 						this.$message({
 							message: '解析成功',
 							type: 'success'
 						});
 
 						this.root = res.data.data;
-						//console.log(this.root);
-						//console.log(this.root.nodeEntity.name);
-						//this.traverse(this.root.childNodes,pivotPoint);
 
-						var pivotPoint = new THREE.Object3D();
-						this.scene.add(pivotPoint);
 						this.showPlanet(this.root);
-						//this.adjustCameraPos(pivotPoint);
-						// this.scene.freezeActiveMeshes();
 						this.scene.autoClear = false; // Color buffer
 						this.scene.autoClearDepthAndStencil = false; // Depth and stencil, obviously
 						this.scene.blockfreeActiveMeshesAndRenderingGroups = true;
@@ -280,92 +267,18 @@
 
 			reset:function(){
 				var _self = this;
+				this.floatBox.visible = false;
 				var parent = this.scene.getObjectByName('root');
-				this.scene.remove(parent);
-
-				this.disposeHierarchy(parent,this.disposeNode);
-				/*
-				if (!parent) return;
-				parent.traverse(function (item) {
-					if (item instanceof THREE.Mesh) {
-						item.geometry.dispose(); // 删除几何体
-						item.material.dispose(); // 删除材质
-					}
-
-				});
-				this.scene.remove(parent);*/
+				if(parent) Util.disposeHierarchy(parent,Util.disposeNode);
 			},
 
-			disposeNode (node)
-			{
-				if (node instanceof THREE.Mesh)
-				{
-					if (node.geometry)
-					{
-						node.geometry.dispose ();
-					}
-
-					if (node.material)
-					{
-						if (node.material instanceof THREE.MeshFaceMaterial)
-						{
-							$.each (node.material.materials, function (idx, mtrl)
-							{
-								if (mtrl.map)               mtrl.map.dispose ();
-								if (mtrl.lightMap)          mtrl.lightMap.dispose ();
-								if (mtrl.bumpMap)           mtrl.bumpMap.dispose ();
-								if (mtrl.normalMap)         mtrl.normalMap.dispose ();
-								if (mtrl.specularMap)       mtrl.specularMap.dispose ();
-								if (mtrl.envMap)            mtrl.envMap.dispose ();
-								if (mtrl.alphaMap)          mtrl.alphaMap.dispose();
-								if (mtrl.aoMap)             mtrl.aoMap.dispose();
-								if (mtrl.displacementMap)   mtrl.displacementMap.dispose();
-								if (mtrl.emissiveMap)       mtrl.emissiveMap.dispose();
-								if (mtrl.gradientMap)       mtrl.gradientMap.dispose();
-								if (mtrl.metalnessMap)      mtrl.metalnessMap.dispose();
-								if (mtrl.roughnessMap)      mtrl.roughnessMap.dispose();
-
-								mtrl.dispose ();    // disposes any programs associated with the material
-							});
-						}
-						else
-						{
-							if (node.material.map)              node.material.map.dispose ();
-							if (node.material.lightMap)         node.material.lightMap.dispose ();
-							if (node.material.bumpMap)          node.material.bumpMap.dispose ();
-							if (node.material.normalMap)        node.material.normalMap.dispose ();
-							if (node.material.specularMap)      node.material.specularMap.dispose ();
-							if (node.material.envMap)           node.material.envMap.dispose ();
-							if (node.material.alphaMap)         node.material.alphaMap.dispose();
-							if (node.material.aoMap)            node.material.aoMap.dispose();
-							if (node.material.displacementMap)  node.material.displacementMap.dispose();
-							if (node.material.emissiveMap)      node.material.emissiveMap.dispose();
-							if (node.material.gradientMap)      node.material.gradientMap.dispose();
-							if (node.material.metalnessMap)     node.material.metalnessMap.dispose();
-							if (node.material.roughnessMap)     node.material.roughnessMap.dispose();
-
-							node.material.dispose ();   // disposes any programs associated with the material
-						}
-					}
-				}
-			} ,  // disposeNode
-
-			disposeHierarchy (node, callback)
-			{
-				for (var i = node.children.length - 1; i >= 0; i--)
-				{
-					var child = node.children[i];
-					this.disposeHierarchy (child, callback);
-					callback (child);
-				}
-			},
 
 			init:function(){
 				this.open1();
 				this.initScene();
 				this.initPlanet();
 				this.render();
-				//this.onSubmit();
+				this.onSubmit();
 				this.control();
 			},
 			
@@ -693,6 +606,12 @@
 		
 		
 		mounted() {
+					this.scene = null,
+					this.camera = null, this.renderer =  null,
+					this.controls = null,
+					this.cloud =  null,
+					this.intersectsArr =  [],
+					this.chooseMesh =  null,
 			this.init();
 
 		}
