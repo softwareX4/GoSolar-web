@@ -49,14 +49,12 @@
 		</div>
 
 
-
-		<div  className="float-card" id="boxPos"  v-show="floatBox.visible">
-			<div className="box is-unselectable">
+		<div  class="float-card" id="boxPos"  v-show="floatBox.visible">
 				<h4 className="name" v-model="floatBox.info.name">
 					{{floatBox.info.name}}[{{floatBox.info.typeName}}]
 				</h4>
 
-				<div v-show="isNotPackage">
+				<div  v-show="isNotPackage">
 					<b>Lines: </b>
 					<span v-model="floatBox.info.loc">{{floatBox.info.loc}}</span>
 					<br />
@@ -67,7 +65,6 @@
 					<span v-model="floatBox.info.attr">{{floatBox.info.attr}}</span>
 					<br />
 				</div>
-			</div>
 		</div>
 
 		<div id="container" v-loading="listLoading" >
@@ -269,7 +266,10 @@
 				var _self = this;
 				this.floatBox.visible = false;
 				var parent = this.scene.getObjectByName('root');
-				if(parent) Util.disposeHierarchy(parent,Util.disposeNode);
+				console.log(parent);
+				if(parent) {
+				    Util.disposeHierarchy(parent,Util.disposeNode);
+                }
 			},
 
 
@@ -667,6 +667,12 @@
 	}
 	.float-card {
 		position: fixed;
+		text-align:center;
+		border:1px solid #a1a1a1;
+		background:#fff;
+		//width:250px;
+		border-radius:25px;
+		padding: 5px 5px;
 	}
 
 	@media (max-width: 500px) {
